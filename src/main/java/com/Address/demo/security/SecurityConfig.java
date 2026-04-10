@@ -20,24 +20,27 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm ->
-                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .csrf(csrf -> csrf.disable())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(entryPoint))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/jobs/signing",
-                                "/api/jobs/login"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                .exceptionHandling(e ->
-                        e.authenticationEntryPoint(entryPoint)
-                );
+                .requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs",
+                        "/api-docs",
+                        "/api-docs/**",
+                        "/api/jobs/signing",   // ✅ ADD THIS
+                        "/api/jobs/login"      // ✅ ADD THIS
+                ).permitAll()
+                .anyRequest().authenticated()
+        )
+                .httpBasic(httpBasic -> {}); // ✅ FIXED
 
+        // JWT filter
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

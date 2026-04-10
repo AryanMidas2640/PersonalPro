@@ -24,59 +24,59 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.startsWith("/api/jobs/signing") ||
-                path.startsWith("/api/jobs/login");
-    }
-
-    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        System.out.println("=========== JWT FILTER ===========");
-        System.out.println("PATH: " + request.getServletPath());
-        System.out.println("AUTH HEADER: " + request.getHeader("Authorization"));
+        String path = request.getRequestURI();
+
+        if (path.contains("swagger") ||
+                path.contains("/api-docs") ||
+                path.contains("/v3/api-docs") ||
+                path.contains("/api/jobs/login") ||
+                path.contains("/api/jobs/signing")) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        // ✅ 🔥 MOST IMPORTANT FIX
+        // Token nahi hai → request ko aage jaane do
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
+        try {
             String token = authHeader.substring(7);
 
-            try {
-                String username = jwtHelper.getUsernameFromToken(token);
+            String username = jwtHelper.getUsernameFromToken(token);
 
-                System.out.println("TOKEN VALID for user: " + username);
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            username,
+                            null,
+                            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                    );
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                username,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                        );
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+            );
 
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            } catch (io.jsonwebtoken.ExpiredJwtException e) {
-                System.out.println("TOKEN EXPIRED");
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token expired");
-                return;
-            } catch (io.jsonwebtoken.JwtException e) {
-                System.out.println("INVALID TOKEN");
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
-                return;
-            }
-        } else {
-            System.out.println("NO VALID AUTH HEADER FOUND");
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token expired");
+            return;
+        } catch (io.jsonwebtoken.JwtException e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
+            return;
         }
 
         filterChain.doFilter(request, response);
     }
+   // System.out.println("PATH: " + request.getRequestURI());
 }
