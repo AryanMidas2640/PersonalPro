@@ -3,6 +3,7 @@ package com.Address.demo.ServiceImp;
 import com.Address.demo.Service.JobService;
 import com.Address.demo.config.MongoTemplateFactory;
 import com.Address.demo.model.Model;
+import com.Address.demo.repositry.JobRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -18,10 +19,21 @@ public class JobServiceImpl implements JobService {
     private static final Logger log = LoggerFactory.getLogger(JobServiceImpl.class);
 
     private final MongoTemplateFactory mongoTemplateFactory;
+    private final JobRepository jobRepository;
+
 
     // Default
     private MongoTemplate fromTemplates() {
         return mongoTemplateFactory.getDefaultTemplate();
+    }
+    public List<Model> getAllJobs() {
+
+        return jobRepository.findAll();
+    }
+    @Override
+    public Model getJobById(String jobId) {
+
+        return jobRepository.findByJobId(jobId);
     }
 
     // Dynamic
@@ -30,9 +42,10 @@ public class JobServiceImpl implements JobService {
     }*/
 
 
-   public JobServiceImpl(MongoTemplateFactory mongoTemplateFactory) {
+   public JobServiceImpl(MongoTemplateFactory mongoTemplateFactory, JobRepository jobRepository) {
         this.mongoTemplateFactory = mongoTemplateFactory;
-    }
+       this.jobRepository = jobRepository;
+   }
 
    // Get MongoTemplate for default DB defined in application.properties
    /* private MongoTemplate fromTemplate() {

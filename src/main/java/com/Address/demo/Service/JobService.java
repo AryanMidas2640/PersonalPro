@@ -13,4 +13,7 @@ public interface JobService {
 
     // Get all jobs in a city from the default database
     List<Model> getJobsByCity(String city);
+
+    List<Model> getAllJobs();
+    Model getJobById(String jobId);
 }

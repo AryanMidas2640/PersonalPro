@@ -26,18 +26,28 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(entryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/v3/api-docs/**",
-                        "/v3/api-docs",
-                        "/api-docs",
-                        "/api-docs/**",
-                        "/api/jobs/signing",   // ✅ ADD THIS
-                        "/api/jobs/login"      // ✅ ADD THIS
-                ).permitAll()
-                .anyRequest().authenticated()
-        )
+
+                        .requestMatchers(
+                                "/api/jobs/signing",
+                                "/api/jobs/login",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                "/api/jobs/create",
+                                "/api/jobs/update/**",
+                                "/api/resume/**",
+                                "/api/jobs/delete/**"
+                        ).hasAuthority("RECRUITER")
+
+                        .requestMatchers(
+                                "/api/jobs/apply/**",
+                                "/api/student/**"
+                        ).hasAuthority("STUDENT")
+
+                        .anyRequest().authenticated()
+                )
                 .httpBasic(httpBasic -> {}); // ✅ FIXED
 
         // JWT filter

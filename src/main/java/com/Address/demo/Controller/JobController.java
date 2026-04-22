@@ -31,7 +31,7 @@ public class JobController {
         Model savedJob = jobService.saveJob(model);
 
         ApiResponse<Model> response =
-                new ApiResponse<>("success", "Job added successfully", savedJob);
+                new ApiResponse<>("Success", "Job added successfully", savedJob);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -76,6 +76,18 @@ public class JobController {
     }
 
      */
+    @GetMapping("/all")
+    public List<Model> getAllJobs() {
+
+        return jobService.getAllJobs();
+    }
+
+    @GetMapping("/{jobId}")
+    public Model getJobById(
+            @PathVariable String jobId) {
+
+        return jobService.getJobById(jobId);
+    }
 
     @GetMapping("/test")
     public String test() {

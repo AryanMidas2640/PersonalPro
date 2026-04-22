@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,59 +25,73 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
 
-        if (path.contains("swagger") ||
-                path.contains("/api-docs") ||
-                path.contains("/v3/api-docs") ||
-                path.contains("/api/jobs/login") ||
-                path.contains("/api/jobs/signing")) {
+        if (path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-resources")
+                || path.startsWith("/webjars")
+                || path.startsWith("/api/jobs/login")
+                || path.startsWith("/api/jobs/signing")) {
 
             filterChain.doFilter(request, response);
             return;
         }
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader =
+                request.getHeader("Authorization");
 
-        // ✅ 🔥 MOST IMPORTANT FIX
-        // Token nahi hai → request ko aage jaane do
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null
+                || !authHeader.startsWith("Bearer ")) {
+
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            String token = authHeader.substring(7);
 
-            String username = jwtHelper.getUsernameFromToken(token);
+            String token =
+                    authHeader.substring(7);
 
-            UsernamePasswordAuthenticationToken authentication =
+            String username =
+                    jwtHelper.getUsernameFromToken(token);
+
+            String role =
+                    jwtHelper.getRoleFromToken(token);
+
+            UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
                             username,
                             null,
-                            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                            List.of(
+                                    new SimpleGrantedAuthority(role)
+                            )
                     );
 
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
+            auth.setDetails(
+                    new WebAuthenticationDetailsSource()
+                            .buildDetails(request)
             );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContextHolder.getContext()
+                    .setAuthentication(auth);
 
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token expired");
-            return;
-        } catch (io.jsonwebtoken.JwtException e) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
+        } catch (Exception e) {
+
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Invalid Token"
+            );
+
             return;
         }
 
         filterChain.doFilter(request, response);
     }
-   // System.out.println("PATH: " + request.getRequestURI());
 }
