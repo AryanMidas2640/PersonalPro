@@ -1,11 +1,7 @@
 package com.Address.demo.ServiceImp;
 
 import com.Address.demo.Service.JobService;
-import com.Address.demo.config.MongoTemplateFactory;
 import com.Address.demo.model.Model;
-import com.Address.demo.repositry.JobRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -16,85 +12,109 @@ import java.util.List;
 @Service
 public class JobServiceImpl implements JobService {
 
-    private static final Logger log = LoggerFactory.getLogger(JobServiceImpl.class);
+    private final MongoTemplate mongoTemplate;
 
-    private final MongoTemplateFactory mongoTemplateFactory;
-    private final JobRepository jobRepository;
-
-
-    // Default
-    private MongoTemplate fromTemplates() {
-        return mongoTemplateFactory.getDefaultTemplate();
-    }
-    public List<Model> getAllJobs() {
-
-        return jobRepository.findAll();
-    }
-    @Override
-    public Model getJobById(String jobId) {
-
-        return jobRepository.findByJobId(jobId);
+    public JobServiceImpl(MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
     }
 
-    // Dynamic
-   /* private MongoTemplate fromTemplates(String dbKey) {
-        return mongoTemplateFactory.getTemplateByKey(dbKey);
-    }*/
-
-
-   public JobServiceImpl(MongoTemplateFactory mongoTemplateFactory, JobRepository jobRepository) {
-        this.mongoTemplateFactory = mongoTemplateFactory;
-       this.jobRepository = jobRepository;
-   }
-
-   // Get MongoTemplate for default DB defined in application.properties
-   /* private MongoTemplate fromTemplate() {
-
-        return mongoTemplateFactory.getTemplates();
-    }*/
-
-
+    // ===============================
+    // SAVE JOB (Recruiter adds job)
+    // ===============================
     @Override
     public Model saveJob(Model model) {
-       // log.info("Saving jobId={} to default database", model.getJobId());
 
-        MongoTemplate templates = fromTemplates();
+        // token se tenant aayega
+        model.setTenantId(
+                com.Address.demo.security.TenantContext.getTenant()
+        );
 
-        // Check if jobId already exists
-        Query query = Query.query(Criteria.where("jobId").is(model.getJobId()));
-        boolean exists = templates.exists(query, Model.class, "newJob");
+        mongoTemplate.save(model, "jobs");
 
-        if (exists) {
-            //log.warn("Job with jobId={} already exists. Skipping save.", model.getJobId());
-            throw new IllegalArgumentException("Job with jobId " + model.getJobId() + " already exists!");
-        }
-
-        templates.save(model, "newJob");
-
-        //log.info("Saved jobId={} to default database", model.getJobId());
         return model;
     }
 
-
+    // ===============================
+    // GET ALL JOBS (Student + Recruiter)
+    // ===============================
     @Override
-    public List<Model> getJobsByCity(String city) {
-        log.info("Fetching jobs for city={} from default database", city);
+    public List<Model> getAllJobs() {
 
-        MongoTemplate template = fromTemplates();
-
-        Query query = Query.query(Criteria.where("city").is(city));
-
-        return template.find(query, Model.class, "newJob");
+        return mongoTemplate.findAll(
+                Model.class,
+                "jobs"
+        );
     }
 
+    // ===============================
+    // GET SINGLE JOB
+    // ===============================
+    @Override
+    public Model getJobById(String jobId) {
+
+        Query query = new Query();
+        query.addCriteria(
+                Criteria.where("jobId").is(jobId)
+        );
+
+        return mongoTemplate.findOne(
+                query,
+                Model.class,
+                "jobs"
+        );
+    }
+
+    // ===============================
+    // GET Recruiter Own Jobs
+    // ===============================
+    @Override
+    public List<Model> getJobsByTenantId(String tenantId) {
+
+        Query query = new Query();
+        query.addCriteria(
+                Criteria.where("tenantId").is(tenantId)
+        );
+
+        return mongoTemplate.find(
+                query,
+                Model.class,
+                "jobs"
+        );
+    }
+
+    // ===============================
+    // CITY WISE JOBS
+    // ===============================
+    @Override
+    public List<Model> getJobsByCity(String city) {
+
+        Query query = new Query();
+        query.addCriteria(
+                Criteria.where("city").is(city)
+        );
+
+        return mongoTemplate.find(
+                query,
+                Model.class,
+                "jobs"
+        );
+    }
+
+    // ===============================
+    // CITY COUNT
+    // ===============================
     @Override
     public long getJobCountByCity(String city) {
-        log.info("Counting jobs for city={} from default database", city);
 
-        MongoTemplate template = fromTemplates();
+        Query query = new Query();
+        query.addCriteria(
+                Criteria.where("city").is(city)
+        );
 
-        Query query = Query.query(Criteria.where("city").is(city));
-
-        return template.count(query, "newJob");
+        return mongoTemplate.count(
+                query,
+                Model.class,
+                "jobs"
+        );
     }
 }

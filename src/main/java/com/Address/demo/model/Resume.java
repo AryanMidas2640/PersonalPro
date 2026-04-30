@@ -20,4 +20,6 @@ public class Resume {
     private String education;
     private String experience;
     private Integer matchingCount;
+    private String username;
+    private String tenantId;
 }

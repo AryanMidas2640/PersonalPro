@@ -2,12 +2,12 @@ package com.Address.demo.dto;
 
 import lombok.Data;
 
+@Data
+public class Signingrequest {
 
-    @Data
-    public class Signingrequest {
-        private String username;
-        private String password;
-        private  String role;
+    private String username;
+    private String password;
+    private String role;
+    //private String tenantId;
 
-    }
-
+}

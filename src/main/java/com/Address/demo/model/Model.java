@@ -10,13 +10,15 @@
     import org.springframework.data.mongodb.core.index.Indexed;
     import org.springframework.data.mongodb.core.mapping.Document;
 
-   @Data
+    @Data
     @Document(collection = "newJob")
     @JsonIgnoreProperties(ignoreUnknown = false)
     public class Model {
 
         @Indexed(unique = true)
         private String jobId;
+
+       private String tenantId;
 
 
         @Id
@@ -35,11 +37,10 @@
        private String jobType;
         private String workMode;
 
-        @Min(0)
-        @Max(9)
+
         private int minExperience;
 
-        @Min(10)
+
         private int maxExperience;
 
 

@@ -1,7 +1,9 @@
 package com.Address.demo.security;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -12,51 +14,53 @@ import java.util.Map;
 @Component
 public class JwtHelper {
 
-    private final Key key =
-            Keys.hmacShaKeyFor(
-                    "mysecretkeymysecretkeymysecretkey123"
-                            .getBytes());
+    private final String SECRET =
+            "mysecretkeymysecretkeymysecretkey123";
 
+    private final Key key =
+            Keys.hmacShaKeyFor(SECRET.getBytes());
+
+    // Generate Token
     public String generateToken(
             String username,
-            String role) {
+            String role,
+            String tenantId) {
 
-        Map<String,Object> claims =
+        Map<String, Object> claims =
                 new HashMap<>();
 
         claims.put("role", role);
+        claims.put("tenantId", tenantId);
 
         return Jwts.builder()
-                .claims(claims)
-                .subject(username)
-                .issuedAt(new Date())
-                .expiration(
-                        new Date(
-                                System.currentTimeMillis()
-                                        + 1000*60*60*5))
-                .signWith(key)
+                .setClaims(claims)
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(
+                        new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 5)
+                )
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String getUsernameFromToken(
-            String token) {
+    private Claims getClaims(String token) {
 
-        return Jwts.parser()
+        return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
     }
 
-    public String getRoleFromToken(
-            String token) {
+    public String getUsernameFromToken(String token) {
+        return getClaims(token).getSubject();
+    }
 
-        return Jwts.parser()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("role", String.class);
+    public String getRoleFromToken(String token) {
+        return getClaims(token).get("role", String.class);
+    }
+
+    public String getTenantIdFromToken(String token) {
+        return getClaims(token).get("tenantId", String.class);
     }
 }

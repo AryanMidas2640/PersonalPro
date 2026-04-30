@@ -81,6 +81,10 @@ public class JobController {
 
         return jobService.getAllJobs();
     }
+    @GetMapping("/tenant/{tenantId}")
+    public List<Model> getJobsByTenantId(@PathVariable String tenantId) {
+        return jobService.getJobsByTenantId(tenantId);
+    }
 
     @GetMapping("/{jobId}")
     public Model getJobById(
