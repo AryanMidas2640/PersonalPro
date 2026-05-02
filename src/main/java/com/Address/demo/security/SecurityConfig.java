@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/jobs/update/**").hasAuthority("RECRUITER")
                         .requestMatchers("/api/jobs/delete/**").hasAuthority("RECRUITER")
                         .requestMatchers("/api/jobs/my-applicants").hasAuthority("RECRUITER")
+                        .requestMatchers("/api/jobs/active-users").hasAuthority("RECRUITER")
 
                         // ======================
                         // STUDENT ONLY
@@ -83,9 +84,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/jobs/tenant/**")
                         .hasAnyAuthority("STUDENT", "RECRUITER")
 
-                        .requestMatchers(HttpMethod.GET, "/api/resume/parse")
+                        .requestMatchers("/api/resume/parse")
                         .hasAnyAuthority("STUDENT", "RECRUITER")
-
                         // Any other request
                         .anyRequest().authenticated()
                 )
@@ -100,4 +100,23 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http
+                .csrf(csrf -> csrf.disable())   // ✅ FIXED
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                );
+
+        return http.build();
+    }
+
+
 }

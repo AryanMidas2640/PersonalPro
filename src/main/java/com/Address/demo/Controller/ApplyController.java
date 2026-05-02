@@ -34,9 +34,10 @@ public class ApplyController {
     // ===============================
     // APPLY JOB
     // ===============================
-    @PostMapping("/apply/{jobId}")
+    @PostMapping("/apply/{jobId}/{status}")
     public String applyJob(
             @PathVariable String jobId,
+            @PathVariable String status,
             HttpServletRequest request) {
 
         String auth = request.getHeader("Authorization");
@@ -85,7 +86,18 @@ public class ApplyController {
                         );
 
         if (oldApp != null) {
-            return "Already Applied";
+
+            // agar HOLD hai → update kar do
+            if (oldApp.getStatus().equalsIgnoreCase("Hold")) {
+                oldApp.setStatus("Applied");
+                applicationRepository.save(oldApp);
+                return "Re-Applied Successfully";
+            }
+
+            // agar already applied hai → block
+            if (oldApp.getStatus().equalsIgnoreCase("Applied")) {
+                return "Already Applied";
+            }
         }
 
         Application app = new Application();
@@ -100,7 +112,7 @@ public class ApplyController {
         app.setJobTitle(job.getJobTitle());
         app.setCompanyName(job.getCompanyName());
 
-        app.setStatus("Applied");
+        app.setStatus(status);
 
         applicationRepository.save(app);
 

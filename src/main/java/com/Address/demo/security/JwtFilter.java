@@ -38,6 +38,16 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return true;
+    }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return true;
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -46,6 +56,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
+        System.out.println("FILTER HEADER = " + authHeader);
+        System.out.println("METHOD = " + request.getMethod());
+        System.out.println("URI = " + request.getRequestURI());
+
+        // HEADER MISSING
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             response.sendError(401, "Token Missing");
             return;
@@ -55,9 +70,22 @@ public class JwtFilter extends OncePerRequestFilter {
 
             String token = authHeader.substring(7).trim();
 
-            String username = jwtHelper.getUsernameFromToken(token);
-            String role = jwtHelper.getRoleFromToken(token);
-            String tenantId = jwtHelper.getTenantIdFromToken(token);
+            System.out.println("TOKEN = " + token);
+
+            String username =
+                    jwtHelper.getUsernameFromToken(token);
+
+            System.out.println("USERNAME = " + username);
+
+            String role =
+                    jwtHelper.getRoleFromToken(token);
+
+            System.out.println("ROLE = " + role);
+
+            String tenantId =
+                    jwtHelper.getTenantIdFromToken(token);
+
+            System.out.println("TENANT ID = " + tenantId);
 
             TenantContext.setTenant(tenantId);
 
@@ -65,7 +93,9 @@ public class JwtFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(
                             username,
                             null,
-                            List.of(new SimpleGrantedAuthority(role))
+                            List.of(
+                                    new SimpleGrantedAuthority(role)
+                            )
                     );
 
             authentication.setDetails(
@@ -73,15 +103,20 @@ public class JwtFilter extends OncePerRequestFilter {
                             .buildDetails(request)
             );
 
-            SecurityContextHolder.getContext()
+            SecurityContextHolder
+                    .getContext()
                     .setAuthentication(authentication);
 
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
+
             e.printStackTrace();
+
             response.sendError(401, "Invalid Token");
+
         } finally {
+
             TenantContext.clear();
         }
     }

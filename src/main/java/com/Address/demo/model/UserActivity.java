@@ -1,24 +1,21 @@
 package com.Address.demo.model;
 
+//package com.Address.demo.model;
+
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Document(collection = "users")
-public class User {
+@Document(collection = "user_activity")
+public class UserActivity {
 
     @Id
     private String id;
 
     private String username;
-    private String password;
     private String role;
-    private String tenantId;
-    private String token;
-
-    // NEW FIELDS
-    private boolean online;
-    private String lastLogin;
-    private String lastLogout;
+    private String status;      // ACTIVE / OFFLINE
+    private String loginTime;
+    private String logoutTime;
 }
